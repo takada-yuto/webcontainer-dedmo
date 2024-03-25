@@ -4,6 +4,7 @@ import "./App.css"
 import { RecoilRoot } from "recoil"
 import { Preview } from "./components/Preview"
 import { Test } from "./components/Test"
+import ViewTree from "./components/ViewTree"
 
 const router = createBrowserRouter([
   // {
@@ -17,6 +18,10 @@ const router = createBrowserRouter([
   {
     path: "/test",
     element: <Test />,
+  },
+  {
+    path: "/viewtree",
+    element: <ViewTree />,
   },
 ])
 export const App = () => {

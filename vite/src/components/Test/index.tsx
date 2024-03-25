@@ -3,12 +3,12 @@ import { DirectoryNode, FileSystemTree, WebContainer } from '@webcontainer/api';
 import { reactFiles } from '../../lib/webContainerSideFiles';
 import { Terminal } from 'xterm';
 import 'xterm/css/xterm.css';
+import ViewTree from '../ViewTree';
 
 let webcontainerInstance:WebContainer;
 
 window.addEventListener('load', async () => {
   webcontainerInstance = await WebContainer.boot();
-  // await webcontainerInstance.mount(files);
   await webcontainerInstance.mount(reactFiles);
 
   const packageJSON = await webcontainerInstance.fs.readFile('package.json', 'utf-8');
@@ -38,14 +38,12 @@ window.addEventListener('load', async () => {
   console.log(terminalEl1)
   console.log(terminalEl2)
   const installDependencies = async(terminal: Terminal) => {
-    // Install dependencies
     const installProcess = await webcontainerInstance.spawn('npm', ['install']);
     installProcess.output.pipeTo(new WritableStream({
       write(data) {
         terminal.write(data);
       }
     }))
-    // Wait for install command to exit
     return installProcess.exit;
   }
   const terminal1 = new Terminal({
@@ -80,12 +78,12 @@ window.addEventListener('load', async () => {
   };
   startDevServer(terminal1);
   startShell(terminal2);
+  console.log(webcontainerInstance)
 });
 
 const startDevServer = async (terminal: Terminal) => {
   console.log('test npm run start!!!');
   console.log(terminal)
-  // const serverProcess = await webcontainerInstance.spawn('npm', ['run', 'start']);
   const serverProcess = await webcontainerInstance.spawn('npm', ['run', 'dev']);
   
   const iframeEl = document.querySelector('iframe');
@@ -105,8 +103,7 @@ const startDevServer = async (terminal: Terminal) => {
   });
 }
 
-const writeIndexJS = async (content:string) => {
-  // await webcontainerInstance.fs.writeFile('/index.js', content);
+export const writeIndexJS = async (content:string) => {
   await webcontainerInstance.fs.writeFile('/components/hello.tsx', content);
 };
 export const Test = () => {
@@ -115,6 +112,7 @@ export const Test = () => {
     <>
       <div id="app" className="container">
         <div className="editor">
+          <ViewTree />
           <textarea>loading.....</textarea>
         </div>
         <div className="preview">

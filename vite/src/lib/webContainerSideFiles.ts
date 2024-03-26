@@ -1,7 +1,7 @@
-import { FileSystemTree } from "@webcontainer/api";
+import { FileSystemTree } from "@webcontainer/api"
 
-export const files:FileSystemTree = {
-  'index.js': {
+export const files: FileSystemTree = {
+  "index.js": {
     file: {
       contents: `
 import Fastify from 'fastify';
@@ -25,7 +25,7 @@ start();
 `,
     },
   },
-  'package.json': {
+  "package.json": {
     file: {
       contents: `
 {
@@ -41,14 +41,14 @@ start();
 }`,
     },
   },
-};
+}
 
 export const reactFiles: FileSystemTree = {
   // This is a directory - provide its name as a key
   components: {
     directory: {
       // This is a file - provide its path as a key:
-      'hello.tsx': {
+      "hello.tsx": {
         // Because it's a file, add the "file" key
         file: {
           contents: `
@@ -80,12 +80,12 @@ export const Hello = () => {
 }`,
         },
       },
-    }
+    },
   },
   pages: {
     directory: {
       // This is a file - provide its path as a key:
-      'index.tsx': {
+      "index.tsx": {
         // Because it's a file, add the "file" key
         file: {
           contents: `
@@ -98,10 +98,10 @@ export default function App() {
 }`,
         },
       },
-    }
+    },
   },
   // This is a file outside the folder
-  'package.json': {
+  "package.json": {
     file: {
       contents: `
 {
@@ -123,12 +123,12 @@ export default function App() {
     "typescript": "^4.3.5"
   }
 }
-`
-    }
+`,
+    },
     /* Omitted for brevity */
   },
   // This is another file outside the folder
-  'tsconfig.json': {
+  "tsconfig.json": {
     file: {
       contents: `
 {
@@ -160,17 +160,17 @@ export default function App() {
   "exclude": [
     "node_modules"
   ]
-}`
-    }
+}`,
+    },
   },
-  'next-env.d.ts': {
+  "next-env.d.ts": {
     file: {
       contents: `
 /// <reference types="next" />
 /// <reference types="next/image-types/global" />
 
 // NOTE: This file should not be edited
-// see https://nextjs.org/docs/basic-features/typescript for more information.`
-    }
+// see https://nextjs.org/docs/basic-features/typescript for more information.`,
+    },
   },
-};
+}

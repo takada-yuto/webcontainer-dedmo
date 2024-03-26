@@ -12,7 +12,7 @@
 //   console.log(packageJSON);
 
 //   const installProcess = await webcontainerInstance.spawn('npm', ['install']);
-  
+
 //   if (await installProcess.exit !== 0) {
 //     throw new Error('Installation failed');
 //   };
@@ -27,7 +27,6 @@
 //       });
 //     }
 //   }
-  
 
 //   startDevServer();
 // });
@@ -35,7 +34,7 @@
 // const startDevServer = async () => {
 //   console.log('npm run start!!!');
 //   await webcontainerInstance.spawn('npm', ['run', 'start']);
-  
+
 //   const iframeEl = document.querySelector('iframe');
 //   console.log(iframeEl)
 //   webcontainerInstance.on('server-ready', (_port, url) => {

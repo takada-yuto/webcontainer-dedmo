@@ -1,5 +1,5 @@
-import { atom } from "recoil";
-import { TreeNode } from "@sinm/react-file-tree";
+import { atom } from "recoil"
+import { TreeNode } from "@sinm/react-file-tree"
 
 export const initialTree: TreeNode = {
   type: "directory",
@@ -11,9 +11,9 @@ export const initialTree: TreeNode = {
       children: [
         {
           type: "file",
-          uri: "/components/hello.tsx"
-        }
-      ]
+          uri: "/components/hello.tsx",
+        },
+      ],
     },
     {
       type: "directory",
@@ -21,54 +21,54 @@ export const initialTree: TreeNode = {
       children: [
         {
           type: "file",
-          uri: "/pages/index.tsx"
-        }
-      ]
+          uri: "/pages/index.tsx",
+        },
+      ],
     },
     {
       type: "file",
-      uri: "/package.json"
+      uri: "/package.json",
     },
     {
       type: "file",
-      uri: "/tsconfig.json"
+      uri: "/tsconfig.json",
     },
     {
       type: "file",
-      uri: "/next-env.d.ts"
-    }
-  ]
-};
+      uri: "/next-env.d.ts",
+    },
+  ],
+}
 
 // ファイルツリーの状態を管理するアトム
 export const fileTreeState = atom({
   key: "fileTreeState",
-  default: initialTree
-});
+  default: initialTree,
+})
 
 // ファイルを追加する関数
 export const addFile = (tree: TreeNode, newFileUri: string) => {
   // 新しいファイルを追加した新しい配列を作成し、それを新しいツリーに追加する
-  const updatedChildren = tree.children ? [...tree.children, { type: "file", uri: newFileUri }] : [{ type: "file", uri: newFileUri }];
+  const updatedChildren = tree.children
+    ? [...tree.children, { type: "file", uri: newFileUri }]
+    : [{ type: "file", uri: newFileUri }]
   return {
     ...tree,
-    children: updatedChildren
-  } as TreeNode;
-};
-
+    children: updatedChildren,
+  } as TreeNode
+}
 
 export const deleteFile = (tree: TreeNode, targetFileUri: string) => {
   // treeのchildrenがundefinedの場合はそのまま返す
   if (!tree.children) {
-    return tree;
+    return tree
   }
 
   return {
     ...tree,
-    children: tree.children.filter((child) => child.uri !== targetFileUri)
-  };
-};
-
+    children: tree.children.filter((child) => child.uri !== targetFileUri),
+  }
+}
 
 // // 使用例
 // const SomeComponent = () => {

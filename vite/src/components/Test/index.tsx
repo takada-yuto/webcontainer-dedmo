@@ -1,18 +1,40 @@
 import './style.css'
-import { DirectoryNode, FileSystemTree, WebContainer } from '@webcontainer/api';
+import { DirectoryNode, FileNode, FileSystemTree, WebContainer } from '@webcontainer/api';
 import { reactFiles } from '../../lib/webContainerSideFiles';
 import { Terminal } from 'xterm';
 import 'xterm/css/xterm.css';
-import ViewTree from '../ViewTree';
+import { FileSystemManager } from '../../domains/file';
+import { useState } from 'react';
+import { ViewTree, loadFileLocalStorage, loadFileNameLocalStorage, saveFileToLocalStorage } from '../ViewTree';
+import { useSetRecoilState } from 'recoil';
+import { fileTreeState } from '../../atoms/tree';
+import { convertToObject } from '../../util/convertTree';
 
-let webcontainerInstance:WebContainer;
+let webcontainerInstance:WebContainer | undefined;
+// ローカルストレージからファイルツリーを読み込み
+export const loadFileTreeFromLocalStorage = () => {
+  const storedFileTree = localStorage.getItem('fileTree');
+  return storedFileTree ? JSON.parse(storedFileTree) : reactFiles;
+};
+
+// ファイルツリーをローカルストレージに保存
+const saveFileTreeToLocalStorage = (fileTree: FileSystemTree) => {
+  localStorage.setItem('fileTree', JSON.stringify(fileTree));
+};
+
+// ファイルツリーを更新する場合、ローカルストレージに保存
+const updateFileTree = (newFileTree: FileSystemTree) => {
+  saveFileTreeToLocalStorage(newFileTree);
+};
 
 window.addEventListener('load', async () => {
+  const initialFileTree = loadFileTreeFromLocalStorage();
   webcontainerInstance = await WebContainer.boot();
-  await webcontainerInstance.mount(reactFiles);
-
-  const packageJSON = await webcontainerInstance.fs.readFile('package.json', 'utf-8');
-  console.log(packageJSON);
+  const fileSystemManager = new FileSystemManager(initialFileTree)
+  console.log("0:tree", initialFileTree)
+  console.log("0", fileSystemManager.files)
+  // 権限エラー
+  await webcontainerInstance.mount(fileSystemManager.files);
 
   const installProcess = await webcontainerInstance.spawn('npm', ['install']);
   
@@ -23,22 +45,33 @@ window.addEventListener('load', async () => {
   const textareaEl = document.querySelector('textarea') as HTMLTextAreaElement;
   const terminalEl1 = document.querySelector('.terminal1') as HTMLElement;
   const terminalEl2= document.querySelector('.terminal2') as HTMLElement;
-  if (textareaEl != null) {
-    // const fileNode = files['index.js'];
-    const pages = reactFiles.components as DirectoryNode
-    const directory = pages.directory as FileSystemTree
-    const fileNode = directory['hello.tsx'];
-    if ('file' in fileNode) {
-      textareaEl.value = fileNode.file.contents as string;
+  const isDirectory = (node: DirectoryNode | FileNode) => {
+    if (!node) return
+    if ("directory" in node) {
+      const directory = node.directory as FileSystemTree
+      const rawFileName = loadFileNameLocalStorage()
+      const lastSlashIndex = rawFileName.lastIndexOf('/');
+      // ファイル名を取得
+      const fileName = lastSlashIndex !== -1 ? rawFileName.substring(lastSlashIndex + 1) : rawFileName;
+      const fileNode = directory[fileName];
+      isDirectory(fileNode)
+    } else if ("file" in node) {
+      textareaEl.value = node.file.contents as string;
       textareaEl.addEventListener('input', (_event) => {
         writeIndexJS(textareaEl.value);
+        console.log("4")
       });
+    } else {
+      return
     }
   }
-  console.log(terminalEl1)
-  console.log(terminalEl2)
+  if (textareaEl != null) {
+    for (const [_, value] of Object.entries(fileSystemManager.files)) {
+      isDirectory(value)
+    }
+  }
   const installDependencies = async(terminal: Terminal) => {
-    const installProcess = await webcontainerInstance.spawn('npm', ['install']);
+    const installProcess = await webcontainerInstance!.spawn('npm', ['install']);
     installProcess.output.pipeTo(new WritableStream({
       write(data) {
         terminal.write(data);
@@ -59,7 +92,7 @@ window.addEventListener('load', async () => {
     throw new Error('Installation failed');
   };
   async function startShell(terminal: Terminal) {
-    const shellProcess = await webcontainerInstance.spawn('jsh', {terminal: {
+    const shellProcess = await webcontainerInstance!.spawn('jsh', {terminal: {
       cols: terminal.cols,
       rows: terminal.rows,
     }},);
@@ -78,16 +111,14 @@ window.addEventListener('load', async () => {
   };
   startDevServer(terminal1);
   startShell(terminal2);
-  console.log(webcontainerInstance)
 });
 
 const startDevServer = async (terminal: Terminal) => {
-  console.log('test npm run start!!!');
-  console.log(terminal)
-  const serverProcess = await webcontainerInstance.spawn('npm', ['run', 'dev']);
+  console.log('npm run dev');
+  localStorage.clear();
+  const serverProcess = await webcontainerInstance!.spawn('npm', ['run', 'dev']);
   
   const iframeEl = document.querySelector('iframe');
-  console.log(iframeEl)
   serverProcess.output.pipeTo(
     new WritableStream({
       write(data) {
@@ -95,8 +126,7 @@ const startDevServer = async (terminal: Terminal) => {
       },
     })
   );
-  webcontainerInstance.on('server-ready', (_port, url) => {
-    console.log(url)
+  webcontainerInstance!.on('server-ready', (_port, url) => {
     if(iframeEl!=null) {
       iframeEl.src = url;
     }
@@ -104,19 +134,52 @@ const startDevServer = async (terminal: Terminal) => {
 }
 
 export const writeIndexJS = async (content:string) => {
-  await webcontainerInstance.fs.writeFile('/components/hello.tsx', content);
+  const filePath = loadFileNameLocalStorage();
+  saveFileToLocalStorage(filePath, content)
+  const fileObj = loadFileLocalStorage(filePath)
+  await webcontainerInstance!.fs.writeFile(filePath, fileObj.content);
 };
 export const Test = () => {
-  console.log("test")
+  const [filePath, setFilePath] = useState("")
+  const setFileTree = useSetRecoilState(fileTreeState);
+  // ファイルパスの変更ハンドラー
+  const handleFilePathChange = (event: any) => {
+    setFilePath(event.target.value);
+  };
+
+  // ファイル作成ハンドラー
+  const handleFileCreation = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const initialFileTree = loadFileTreeFromLocalStorage();
+    const fileSystemManager = new FileSystemManager(initialFileTree)
+    fileSystemManager.addFile(filePath, "")
+    const convertedTree = convertToObject(fileSystemManager.files)
+    updateFileTree(fileSystemManager.files)
+    setFileTree(convertedTree)
+    await webcontainerInstance!.mount(fileSystemManager.files);
+    // ファイル作成後にフォームをクリア
+    setFilePath("");
+  };
   return (
     <>
       <div id="app" className="container">
         <div className="editor">
-          <ViewTree />
+          <div>
+          <form onSubmit={handleFileCreation}>
+            <input
+              type="text"
+              placeholder="ファイルパス"
+              value={filePath}
+              onChange={handleFilePathChange}
+            />
+            <button type="submit">追加</button>
+          </form>
+            <ViewTree />
+          </div>
           <textarea>loading.....</textarea>
         </div>
         <div className="preview">
-          <iframe src="../Preview" allow="sharedarraybuffer"></iframe>
+          <iframe src="../Preview"></iframe>
         </div>
       </div>
       <div id="app" className="terminalcontainer">

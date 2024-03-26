@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import _ from "lodash";
 import {
   FileTree,
@@ -10,8 +10,11 @@ import FileItemWithFileIcon from "@sinm/react-file-tree/lib/FileItemWithFileIcon
 import "@sinm/react-file-tree/icons.css";
 import "@sinm/react-file-tree/styles.css";
 import "./styles.css";
-import { reactFiles } from "../../lib/webContainerSideFiles";
-import { writeIndexJS } from "../Test";
+import { loadFileTreeFromLocalStorage, writeIndexJS } from "../Test";
+import { useRecoilState } from "recoil";
+import { fileTreeState } from "../../atoms/tree";
+import { FileSystemTree } from "@webcontainer/api";
+
 
 const sorter = (treeNodes: TreeNode[]) =>
   _.orderBy(
@@ -22,38 +25,74 @@ const sorter = (treeNodes: TreeNode[]) =>
     ],
     ["asc", "asc"]
   );
+  export const loadFileNameLocalStorage = () => {
+    const storedFileName = localStorage.getItem('fileName');
+    const initialFileName = '/components/hello.tsx'
+    return storedFileName ? storedFileName.replace(/"/g, '') : initialFileName.replace(/"/g, '');
+  };
+  export const loadFileLocalStorage = (fileName: string) => {
+    const initialFileObj = { 
+      name: '/components/hello.tsx',
+      content: ""
+    }
+    const storedFile = localStorage.getItem(fileName);
+    if (storedFile) {
+      const fileName = JSON.parse(storedFile).name.replace(/"/g, '');
+      const fileContent = JSON.parse(storedFile).content;
+      const storedFileObj = {
+        name: fileName,
+        content: fileContent
+      }
+      return storedFileObj
+    } else {
+      return initialFileObj
+    }
+  };
+  
+  // ファイルの名前をローカルストレージに保存
+  const saveFileNameToLocalStorage = (fileName: string) => {
+    localStorage.setItem('fileName', JSON.stringify(fileName));
+  };
+  // ファイルの名前と内容をローカルストレージに保存
+  export const saveFileToLocalStorage = (fileName: string, content: string) => {
+    const file = { name: fileName, content: content };
+    localStorage.setItem(fileName, JSON.stringify(file));
+  };
+  export const ViewTree = () => {
+    const [fileTree, setFileTree] = useRecoilState(fileTreeState);
+    const loadTree = () => {
+      return Promise.resolve(fileTree);
+    };
 
-const loadTree = () => {
-  return import("../../lib/tree.json").then((module) => module.default as TreeNode);
-};
-
-const ViewTree = () => {
-  const [tree, setTree] = useState<TreeNode | undefined>();
-
+  // コンポーネント内で直接関数を定義して使用します
   useEffect(() => {
     loadTree()
-      // expand root node
-      .then((tree) => Object.assign(tree, { expanded: true }))
-      .then(setTree);
+      .then((loadedTree) => {
+        // ツリーがロードされたら拡張して設定します
+        if (loadedTree) {
+          const expandedTree = { ...loadedTree, expanded: true };
+          setFileTree(expandedTree as TreeNode);
+        }
+      });
   }, []);
 
   const toggleExpanded: FileTreeProps["onItemClick"] = (treeNode) => {
-    setTree((tree) =>
+    const initialFileTree: FileSystemTree = loadFileTreeFromLocalStorage();
+    setFileTree((tree) =>
       utils.assignTreeNode(tree, treeNode.uri, {
         expanded: !treeNode.expanded
-      })
+      }) as TreeNode
     );
-    console.log(treeNode)
     const textareaEl = document.querySelector('textarea') as HTMLTextAreaElement;
+    const storedFileContent = loadFileLocalStorage(treeNode.uri)
     if (textareaEl != null) {
       if (treeNode.type === 'directory') return
+      saveFileNameToLocalStorage(treeNode.uri)
       const lastSlashIndex = treeNode.uri.lastIndexOf('/');
 
       // ファイル名を取得
       const fileName = lastSlashIndex !== -1 ? treeNode.uri.substring(lastSlashIndex + 1) : treeNode.uri;
-
-      console.log(fileName);
-      const matchedFile = Object.entries(reactFiles).find(([key, value]) => {
+      const matchedFile = Object.entries(initialFileTree).find(([key, value]) => {
         if ('directory' in value) {
           // もしディレクトリならその中から探す
           return Object.keys(value.directory).includes(fileName);
@@ -65,21 +104,20 @@ const ViewTree = () => {
       
       const fileObject = matchedFile ? matchedFile[1] : null;
       
-      console.log(matchedFile);
-      console.log(fileObject);
-      console.log(fileObject)
       if ('file' in fileObject!) {
-        textareaEl.value = fileObject.file.contents as string;
+        textareaEl.value = storedFileContent.content ? storedFileContent.content : fileObject.file.contents as string;
         textareaEl.addEventListener('input', (_event) => {
           writeIndexJS(textareaEl.value);
         });
+        saveFileToLocalStorage(treeNode.uri, fileObject.file.contents as string)
       } else {
         const file = fileObject?.directory[fileName]
         if ('file' in file!) {
-          textareaEl.value = file.file.contents as string;
+          textareaEl.value = storedFileContent.content ? storedFileContent.content : file.file.contents as string;
           textareaEl.addEventListener('input', (_event) => {
             writeIndexJS(textareaEl.value);
           });
+          saveFileToLocalStorage(treeNode.uri, file.file.contents as string)
         }
 
       }
@@ -95,12 +133,10 @@ const ViewTree = () => {
     <div className="App">
       <FileTree
         itemRenderer={itemRender}
-        tree={tree}
+        tree={fileTree}
         onItemClick={toggleExpanded}
         sorter={sorter}
       />
     </div>
   );
 };
-
-export default ViewTree;

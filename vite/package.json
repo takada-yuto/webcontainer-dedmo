@@ -11,7 +11,10 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
+    "@sinm/react-file-tree": "^1.1.1",
     "@webcontainer/api": "^1.1.9",
+    "lodash": "^4.17.21",
+    "patch-package": "^8.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3",

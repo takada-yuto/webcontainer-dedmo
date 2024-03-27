@@ -3,39 +3,39 @@ import { TreeNode } from "@sinm/react-file-tree"
 
 export const initialTree: TreeNode = {
   type: "directory",
-  uri: "src",
+  uri: "/src",
   children: [
     {
       type: "directory",
-      uri: "/components",
+      uri: "/src/components",
       children: [
         {
           type: "file",
-          uri: "/components/hello.tsx",
+          uri: "/src/components/hello.tsx",
         },
       ],
     },
     {
       type: "directory",
-      uri: "/pages",
+      uri: "/src/pages",
       children: [
         {
           type: "file",
-          uri: "/pages/index.tsx",
+          uri: "/src/pages/index.tsx",
         },
       ],
     },
     {
       type: "file",
-      uri: "/package.json",
+      uri: "/src/package.json",
     },
     {
       type: "file",
-      uri: "/tsconfig.json",
+      uri: "/src/tsconfig.json",
     },
     {
       type: "file",
-      uri: "/next-env.d.ts",
+      uri: "/src/next-env.d.ts",
     },
   ],
 }
@@ -69,31 +69,3 @@ export const deleteFile = (tree: TreeNode, targetFileUri: string) => {
     children: tree.children.filter((child) => child.uri !== targetFileUri),
   }
 }
-
-// // 使用例
-// const SomeComponent = () => {
-//   const [fileTree, setFileTree] = useRecoilState(fileTreeState);
-
-//   const handleAddFile = () => {
-//     const newFileUri = "/path/to/newFile.tsx"; // 追加するファイルのURI
-//     setFileTree(addFile(fileTree, newFileUri) as TreeNode);
-//   };
-
-//   const handleDeleteFile = (targetFileUri: string) => {
-//     setFileTree(deleteFile(fileTree, targetFileUri));
-//   };
-
-//   return (
-//     <div>
-//       {/* ファイルの追加ボタン */}
-//       <button onClick={handleAddFile}>ファイルを追加</button>
-
-//       {/* ファイルの削除ボタン */}
-//       <button onClick={() => handleDeleteFile("/components/hello.tsx")}>
-//         hello.tsxを削除
-//       </button>
-
-//       {/* その他のコンポーネント */}
-//     </div>
-//   );
-// };

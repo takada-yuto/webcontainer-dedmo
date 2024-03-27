@@ -1,33 +1,16 @@
-import { DirectoryNode, FileNode, FileSystemTree } from "@webcontainer/api"
+import { FileSystemTree } from "@webcontainer/api"
 
 export class FileSystemManager {
   public files: FileSystemTree
 
   constructor(initialFiles: FileSystemTree) {
-    this.files = this.removeEmptyKeys(initialFiles) // 空文字のキーを除外して初期値を保存
+    this.files = initialFiles // 空文字のキーを除外して初期値を保存
   }
 
-  private removeEmptyKeys(tree: FileSystemTree): FileSystemTree {
-    const cleanedTree: FileSystemTree = {}
-    for (const key in tree) {
-      if (key !== "") {
-        const value = tree[key] as DirectoryNode
-        if ("directory" in value) {
-          cleanedTree[key] = {
-            directory: this.removeEmptyKeys(value.directory),
-          }
-        } else {
-          cleanedTree[key] = value as FileNode
-        }
-      }
-    }
-    return cleanedTree
-  }
   get initialFiles(): FileSystemTree {
     return this.initialFiles
   }
 
-  // ファイルを追加するメソッド
   addFile(filePath: string, fileContents: string): void {
     const pathParts = filePath.split("/")
     let currentDir: any = this.files // 現在のディレクトリを初期化
@@ -44,8 +27,14 @@ export class FileSystemManager {
         if (!currentDir[part]) {
           // ディレクトリが存在しない場合は新しく追加
           currentDir[part] = { directory: {} }
+        } else if (currentDir[part].directory) {
+          // ディレクトリが存在し、既存のディレクトリがある場合はそのディレクトリを参照
+          currentDir = currentDir[part].directory
+        } else if (currentDir[part].file) {
+          // ディレクトリが存在し、既存のファイルがある場合は上書き
+          currentDir[part] = { directory: {} }
+          currentDir = currentDir[part].directory
         }
-        currentDir = currentDir[part].directory // 次のディレクトリへ移動
       }
     }
   }
@@ -78,16 +67,3 @@ export class FileSystemManager {
     return { ...this.files } // コピーして返す
   }
 }
-
-// // 使用例
-// const fileSystemManager = new FileSystemManager(reactFiles); // 初期値を設定
-
-// // ファイルを追加
-// fileSystemManager.addFile("/pages/newPage.tsx", "New page contents");
-
-// // ファイルを削除
-// fileSystemManager.deleteFile("/pages/index.tsx");
-
-// // 現在のファイルツリーを取得
-// const currentFiles = fileSystemManager.getFiles();
-// console.log(currentFiles);

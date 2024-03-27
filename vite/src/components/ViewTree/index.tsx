@@ -8,7 +8,7 @@ import "./styles.css"
 import { loadFileTreeFromLocalStorage, writeIndexJS } from "../Test"
 import { useRecoilState } from "recoil"
 import { fileTreeState } from "../../atoms/tree"
-import { FileSystemTree } from "@webcontainer/api"
+import { DirectoryNode, FileSystemTree } from "@webcontainer/api"
 
 const sorter = (treeNodes: TreeNode[]) =>
   _.orderBy(
@@ -21,14 +21,14 @@ const sorter = (treeNodes: TreeNode[]) =>
   )
 export const loadFileNameLocalStorage = () => {
   const storedFileName = localStorage.getItem("fileName")
-  const initialFileName = "/components/hello.tsx"
+  const initialFileName = "/src/components/hello.tsx"
   return storedFileName
     ? storedFileName.replace(/"/g, "")
     : initialFileName.replace(/"/g, "")
 }
 export const loadFileLocalStorage = (fileName: string) => {
   const initialFileObj = {
-    name: "/components/hello.tsx",
+    name: "/src/components/hello.tsx",
     content: "",
   }
   const storedFile = localStorage.getItem(fileName)
@@ -46,7 +46,7 @@ export const loadFileLocalStorage = (fileName: string) => {
 }
 
 // ファイルの名前をローカルストレージに保存
-const saveFileNameToLocalStorage = (fileName: string) => {
+export const saveFileNameToLocalStorage = (fileName: string) => {
   localStorage.setItem("fileName", JSON.stringify(fileName))
 }
 // ファイルの名前と内容をローカルストレージに保存
@@ -81,9 +81,9 @@ export const ViewTree = () => {
     )
     const textareaEl = document.querySelector("textarea") as HTMLTextAreaElement
     const storedFileContent = loadFileLocalStorage(treeNode.uri)
+    saveFileNameToLocalStorage(treeNode.uri)
     if (textareaEl != null) {
       if (treeNode.type === "directory") return
-      saveFileNameToLocalStorage(treeNode.uri)
       const lastSlashIndex = treeNode.uri.lastIndexOf("/")
 
       // ファイル名を取得
@@ -91,19 +91,40 @@ export const ViewTree = () => {
         lastSlashIndex !== -1
           ? treeNode.uri.substring(lastSlashIndex + 1)
           : treeNode.uri
-      const matchedFile = Object.entries(initialFileTree).find(
-        ([key, value]) => {
-          if ("directory" in value) {
-            // もしディレクトリならその中から探す
-            return Object.keys(value.directory).includes(fileName)
+
+      const findMatchingFile = (
+        directory: FileSystemTree,
+        filePath: string
+      ): any => {
+        const pathParts = filePath.split("/").filter((part) => part !== "") // "/"で分割して不要な空の要素を除外する
+
+        let currentDir: FileSystemTree | DirectoryNode = directory
+
+        for (const part of pathParts) {
+          if (!("directory" in Object.values(currentDir)[0])) {
+            const directoryContents: any = currentDir.directory
+            if (part in directoryContents) {
+              return directoryContents[part]
+            }
+            // ディレクトリではない場合は該当ファイルは存在しないので null を返す
+            return null
+          }
+
+          const directoryContents: any = currentDir
+
+          if (part in directoryContents) {
+            // ディレクトリが存在する場合はそのディレクトリを参照し、次の階層へ移動する
+            currentDir = directoryContents[part]
           } else {
-            // ディレクトリでなければ直接ファイル名と照合する
-            return key === fileName
+            // ディレクトリが見つからない場合は該当ファイルは存在しないので null を返す
+            return null
           }
         }
-      )
+      }
 
-      const fileObject = matchedFile ? matchedFile[1] : null
+      const matchedFile = findMatchingFile(initialFileTree, treeNode.uri)
+
+      const fileObject = matchedFile ? matchedFile : null
 
       if ("file" in fileObject!) {
         textareaEl.value = storedFileContent.content

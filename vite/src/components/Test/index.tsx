@@ -38,15 +38,15 @@ const updateFileTree = (newFileTree: FileSystemTree) => {
 }
 
 window.addEventListener("load", async () => {
+  localStorage.clear()
   const initialFileTree = loadFileTreeFromLocalStorage()
   webcontainerInstance = await WebContainer.boot()
   const fileSystemManager = new FileSystemManager(initialFileTree)
-  console.log("0:tree", initialFileTree)
-  console.log("0", fileSystemManager.files)
-  // 権限エラー
   await webcontainerInstance.mount(fileSystemManager.files)
-
-  const installProcess = await webcontainerInstance.spawn("npm", ["install"])
+  const installProcess = await webcontainerInstance.spawn("sh", [
+    "-c",
+    "cd src/ && npm i",
+  ])
 
   if ((await installProcess.exit) !== 0) {
     throw new Error("Installation failed")
@@ -72,7 +72,6 @@ window.addEventListener("load", async () => {
       textareaEl.value = node.file.contents as string
       textareaEl.addEventListener("input", (_event) => {
         writeIndexJS(textareaEl.value)
-        console.log("4")
       })
     } else {
       return
@@ -84,7 +83,11 @@ window.addEventListener("load", async () => {
     }
   }
   const installDependencies = async (terminal: Terminal) => {
-    const installProcess = await webcontainerInstance!.spawn("npm", ["install"])
+    const installProcess = await webcontainerInstance!.spawn("sh", [
+      "-c",
+      "cd src/ && npm i",
+    ])
+
     installProcess.output.pipeTo(
       new WritableStream({
         write(data) {
@@ -132,8 +135,10 @@ window.addEventListener("load", async () => {
 
 const startDevServer = async (terminal: Terminal) => {
   console.log("npm run dev")
-  localStorage.clear()
-  const serverProcess = await webcontainerInstance!.spawn("npm", ["run", "dev"])
+  const serverProcess = await webcontainerInstance!.spawn("sh", [
+    "-c",
+    "cd src/ && npm run dev",
+  ])
 
   const iframeEl = document.querySelector("iframe")
   serverProcess.output.pipeTo(
@@ -173,10 +178,9 @@ export const Test = () => {
     const fileSystemManager = new FileSystemManager(initialFileTree)
     fileSystemManager.addFile(filePath, "")
     const convertedTree = convertToObject(fileSystemManager.files)
-    updateFileTree(fileSystemManager.files)
-    setFileTree(convertedTree)
+    updateFileTree(fileSystemManager.files as FileSystemTree)
+    setFileTree(convertedTree.children![0])
     await webcontainerInstance!.mount(fileSystemManager.files)
-    // ファイル作成後にフォームをクリア
     setFilePath("")
   }
   return (
@@ -185,6 +189,7 @@ export const Test = () => {
         <div className="editor">
           <div>
             <form onSubmit={handleFileCreation}>
+              <p>※ リロードでデータ消えます</p>
               <input
                 type="text"
                 placeholder="ファイルパス"
@@ -195,7 +200,7 @@ export const Test = () => {
             </form>
             <ViewTree />
           </div>
-          <textarea>loading.....</textarea>
+          <textarea></textarea>
         </div>
         <div className="preview">
           <iframe src="../Preview"></iframe>

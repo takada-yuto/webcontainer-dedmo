@@ -71,12 +71,6 @@ export const Hello = () => {
         </button>
       </div>
       <div id="rewardId"></div>
-      <p className="text-gray-500 my-2">
-        Developed by 
-        <a target="_blank" rel="noopener noreferrer" href="https://twitter.com/steelydylan" className="text-blue-600 underline inline-block ml-2">
-          steelydylan
-        </a>
-      </p>
     </div>
   )
 }`,

@@ -4,7 +4,6 @@ export const Preview = () => {
       <h1 className="text-4xl font-bold text-gray-900 text-center">
         Installing dependencies...
       </h1>
-      <div>ハロー</div>
     </div>
   )
 }

@@ -8,16 +8,20 @@ import { reactFiles } from "../../lib/webContainerSideFiles"
 import { Terminal } from "xterm"
 import "xterm/css/xterm.css"
 import { FileSystemManager } from "../../domains/file"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   ViewTree,
   loadFileLocalStorage,
   loadFileNameLocalStorage,
   saveFileToLocalStorage,
 } from "../ViewTree"
-import { useSetRecoilState } from "recoil"
+import { useRecoilState, useSetRecoilState } from "recoil"
 import { fileTreeState } from "../../atoms/tree"
 import { convertToObject } from "../../util/convertTree"
+import { Renderer, RichTextarea } from "rich-textarea"
+import { Highlight, InternalHighlightProps, themes } from "prism-react-renderer"
+import * as react from "react"
+import { codeState } from "../../atoms/code"
 
 let webcontainerInstance: WebContainer | undefined
 // ローカルストレージからファイルツリーを読み込み
@@ -36,131 +40,140 @@ const updateFileTree = (newFileTree: FileSystemTree) => {
   saveFileTreeToLocalStorage(newFileTree)
 }
 
-window.addEventListener("load", async () => {
-  localStorage.clear()
-  const initialFileTree = loadFileTreeFromLocalStorage()
-  webcontainerInstance = await WebContainer.boot()
-  const fileSystemManager = new FileSystemManager(initialFileTree)
-  await webcontainerInstance.mount(fileSystemManager.files)
-  const installProcess = await webcontainerInstance.spawn("sh", [
-    "-c",
-    "cd src/ && npm i",
-  ])
-
-  if ((await installProcess.exit) !== 0) {
-    throw new Error("Installation failed")
-  }
-
-  const textareaEl = document.querySelector("textarea") as HTMLTextAreaElement
-  const terminalEl1 = document.querySelector(".terminal1") as HTMLElement
-  const terminalEl2 = document.querySelector(".terminal2") as HTMLElement
-  const isDirectory = (node: DirectoryNode | FileNode) => {
-    if (!node) return
-    if ("directory" in node) {
-      const directory = node.directory as FileSystemTree
-      const rawFileName = loadFileNameLocalStorage()
-      const lastSlashIndex = rawFileName.lastIndexOf("/")
-      // ファイル名を取得
-      const fileName =
-        lastSlashIndex !== -1
-          ? rawFileName.substring(lastSlashIndex + 1)
-          : rawFileName
-      const fileNode = directory[fileName]
-      isDirectory(fileNode)
-    } else if ("file" in node) {
-      textareaEl.value = node.file.contents as string
-      textareaEl.addEventListener("input", (_event) => {
-        writeIndexJS(textareaEl.value)
-      })
-    } else {
-      return
-    }
-  }
-  if (textareaEl != null) {
-    for (const [_, value] of Object.entries(fileSystemManager.files)) {
-      isDirectory(value)
-    }
-  }
-  const installDependencies = async (terminal: Terminal) => {
-    const installProcess = await webcontainerInstance!.spawn("sh", [
-      "-c",
-      "cd src/ && npm i",
-    ])
-
-    installProcess.output.pipeTo(
-      new WritableStream({
-        write(data) {
-          terminal.write(data)
-        },
-      })
-    )
-    return installProcess.exit
-  }
-  const terminal1 = new Terminal({
-    convertEol: true,
-  })
-  const terminal2 = new Terminal({
-    convertEol: true,
-  })
-  terminal1.open(terminalEl1)
-  terminal2.open(terminalEl2)
-  const exitCode = await installDependencies(terminal1)
-  if (exitCode !== 0) {
-    throw new Error("Installation failed")
-  }
-  async function startShell(terminal: Terminal) {
-    const shellProcess = await webcontainerInstance!.spawn("jsh", {
-      terminal: {
-        cols: terminal.cols,
-        rows: terminal.rows,
-      },
-    })
-    shellProcess.output.pipeTo(
-      new WritableStream({
-        write(data) {
-          terminal.write(data)
-        },
-      })
-    )
-    const input = shellProcess.input.getWriter()
-    terminal.onData((data) => {
-      input.write(data)
-    })
-    return shellProcess
-  }
-  startDevServer(terminal1)
-  startShell(terminal2)
-})
-
-const startDevServer = async (terminal: Terminal) => {
-  console.log("npm run dev")
-  const serverProcess = await webcontainerInstance!.spawn("sh", [
-    "-c",
-    "cd src/ && npm run dev",
-  ])
-
-  const iframeEl = document.querySelector("iframe")
-  serverProcess.output.pipeTo(
-    new WritableStream({
-      write(data) {
-        terminal.write(data)
-      },
-    })
-  )
-  webcontainerInstance!.on("server-ready", (_port, url) => {
-    if (iframeEl != null) {
-      iframeEl.src = url
-    }
-  })
-}
-
 export const writeIndexJS = async (content: string) => {
   const filePath = loadFileNameLocalStorage()
   saveFileToLocalStorage(filePath, content)
   const fileObj = loadFileLocalStorage(filePath)
-  await webcontainerInstance!.fs.writeFile(filePath, fileObj.content)
+  if (!webcontainerInstance) {
+    console.log("Creating instance")
+  } else {
+    await webcontainerInstance.fs.writeFile(filePath, fileObj.content)
+  }
 }
 export const Test = () => {
+  const [code, setCode] = useRecoilState(codeState)
+  const startDevServer = async (terminal: Terminal) => {
+    console.log("npm run dev")
+    const serverProcess = await webcontainerInstance!.spawn("sh", [
+      "-c",
+      "cd src/ && npm run dev",
+    ])
+
+    const iframeEl = document.querySelector("iframe")
+    serverProcess.output.pipeTo(
+      new WritableStream({
+        write(data) {
+          terminal.write(data)
+        },
+      })
+    )
+    webcontainerInstance!.on("server-ready", (_port, url) => {
+      if (iframeEl != null) {
+        iframeEl.src = url
+      }
+    })
+  }
+  useEffect(() => {
+    ;(async () => {
+      localStorage.clear()
+      const initialFileTree = loadFileTreeFromLocalStorage()
+      if (!webcontainerInstance) {
+        webcontainerInstance = await WebContainer.boot()
+      }
+      const fileSystemManager = new FileSystemManager(initialFileTree)
+      await webcontainerInstance.mount(fileSystemManager.files)
+      const installProcess = await webcontainerInstance.spawn("sh", [
+        "-c",
+        "cd src/ && npm i",
+      ])
+
+      if ((await installProcess.exit) !== 0) {
+        throw new Error("Installation failed")
+      }
+
+      const textareaEl = document.querySelector(
+        "#myTextarea"
+      ) as unknown as react.FunctionComponentElement<InternalHighlightProps>
+      const terminalEl1 = document.querySelector(".terminal1") as HTMLElement
+      const terminalEl2 = document.querySelector(".terminal2") as HTMLElement
+      const isDirectory = (node: DirectoryNode | FileNode) => {
+        if (!node) return
+        if ("directory" in node) {
+          const directory = node.directory as FileSystemTree
+          const rawFileName = loadFileNameLocalStorage()
+          const lastSlashIndex = rawFileName.lastIndexOf("/")
+          // ファイル名を取得
+          const fileName =
+            lastSlashIndex !== -1
+              ? rawFileName.substring(lastSlashIndex + 1)
+              : rawFileName
+          const fileNode = directory[fileName]
+          isDirectory(fileNode)
+        } else if ("file" in node) {
+          setCode(node.file.contents as string)
+        } else {
+          return
+        }
+      }
+      if (textareaEl != null) {
+        for (const [_, value] of Object.entries(fileSystemManager.files)) {
+          isDirectory(value)
+        }
+      }
+      const installDependencies = async (terminal: Terminal) => {
+        const installProcess = await webcontainerInstance!.spawn("sh", [
+          "-c",
+          "cd src/ && npm i",
+        ])
+
+        installProcess.output.pipeTo(
+          new WritableStream({
+            write(data) {
+              terminal.write(data)
+            },
+          })
+        )
+        return installProcess.exit
+      }
+      const terminal1 = new Terminal({
+        convertEol: true,
+      })
+      const terminal2 = new Terminal({
+        convertEol: true,
+      })
+      terminal1.open(terminalEl1)
+      terminal2.open(terminalEl2)
+      const exitCode = await installDependencies(terminal1)
+      if (exitCode !== 0) {
+        throw new Error("Installation failed")
+      }
+      async function startShell(terminal: Terminal) {
+        const shellProcess = await webcontainerInstance!.spawn("jsh", {
+          terminal: {
+            cols: terminal.cols,
+            rows: terminal.rows,
+          },
+        })
+        shellProcess.output.pipeTo(
+          new WritableStream({
+            write(data) {
+              terminal.write(data)
+            },
+          })
+        )
+        const input = shellProcess.input.getWriter()
+        terminal.onData((data) => {
+          input.write(data)
+        })
+        return shellProcess
+      }
+      startDevServer(terminal1)
+      startShell(terminal2)
+    })()
+  }, [])
+  useEffect(() => {
+    writeIndexJS(code)
+  }, [setCode])
   const [filePath, setFilePath] = useState("")
   const setFileTree = useSetRecoilState(fileTreeState)
   // ファイルパスの変更ハンドラー
@@ -182,6 +195,61 @@ export const Test = () => {
     await webcontainerInstance!.mount(fileSystemManager.files)
     setFilePath("")
   }
+
+  const style: React.CSSProperties = {
+    width: "100%",
+    height: "100%",
+    caretColor: "white",
+    backgroundColor: "rgb(40, 42, 54)",
+  }
+
+  const rendererHandler = () => {
+    const fileName = loadFileNameLocalStorage()
+    let language: string
+    const fileExtension = fileName.split(".").pop()
+    const languageArray = [
+      // 公式で提供されている言語
+      "markup",
+      "jsx",
+      "tsx",
+      "swift",
+      "kotlin",
+      "objectivec",
+      "js-extras",
+      "reason",
+      "rust",
+      "graphql",
+      "yaml",
+      "go",
+      "cpp",
+      "markdown",
+      "python",
+    ]
+    if (fileExtension && fileExtension in languageArray) {
+      language = fileExtension
+    } else {
+      language = "tsx"
+    }
+    const renderer: Renderer = (value) => {
+      return (
+        <Highlight theme={themes.dracula} code={value} language={language}>
+          {({ className, style, tokens, getLineProps, getTokenProps }) => (
+            <div className={className} style={style}>
+              {tokens.map((line, i) => (
+                <div {...getLineProps({ line, key: i })}>
+                  {line.map((token, key) => (
+                    <span {...getTokenProps({ token, key })} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </Highlight>
+      )
+    }
+    return renderer
+  }
+
   return (
     <>
       <div className="grid grid-cols-1 gap-4">
@@ -210,7 +278,18 @@ export const Test = () => {
             </form>
             <ViewTree />
           </div>
-          <textarea className="flex bg-gray-100 text-gray-800 px-4 py-2 rounded-lg shadow-md focus:outline-none focus:ring focus:border-blue-300"></textarea>
+          <RichTextarea
+            id="myTextarea"
+            style={style}
+            onChange={(e) => {
+              setCode(e.target.value)
+              writeIndexJS(e.target.value)
+            }}
+            value={code}
+            className="flex bg-gray-100 text-gray-800 px-4 py-2 rounded-lg shadow-md focus:outline-none focus:ring focus:border-blue-300"
+          >
+            {rendererHandler()}
+          </RichTextarea>
           <div className="preview flex">
             <iframe
               src="../Preview"

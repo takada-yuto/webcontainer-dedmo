@@ -8,6 +8,9 @@ import { loadFileTreeFromLocalStorage, writeIndexJS } from "../Test"
 import { useRecoilState } from "recoil"
 import { fileTreeState } from "../../atoms/tree"
 import { DirectoryNode, FileSystemTree } from "@webcontainer/api"
+import * as react from "react"
+import { InternalHighlightProps } from "prism-react-renderer"
+import { codeState } from "../../atoms/code"
 
 const sorter = (treeNodes: TreeNode[]) =>
   _.orderBy(
@@ -55,6 +58,7 @@ export const saveFileToLocalStorage = (fileName: string, content: string) => {
 }
 export const ViewTree = () => {
   const [fileTree, setFileTree] = useRecoilState(fileTreeState)
+  const [code, setCode] = useRecoilState(codeState)
   const loadTree = () => {
     return Promise.resolve(fileTree)
   }
@@ -78,7 +82,9 @@ export const ViewTree = () => {
           expanded: !treeNode.expanded,
         }) as TreeNode
     )
-    const textareaEl = document.querySelector("textarea") as HTMLTextAreaElement
+    const textareaEl = document.querySelector(
+      "#myTextarea"
+    ) as unknown as react.FunctionComponentElement<InternalHighlightProps>
     const storedFileContent = loadFileLocalStorage(treeNode.uri)
     saveFileNameToLocalStorage(treeNode.uri)
     if (textareaEl != null) {
@@ -126,32 +132,32 @@ export const ViewTree = () => {
       const fileObject = matchedFile ? matchedFile : null
 
       if ("file" in fileObject!) {
-        textareaEl.value = storedFileContent.content
-          ? storedFileContent.content
-          : (fileObject.file.contents as string)
-        textareaEl.addEventListener("input", (_event) => {
-          writeIndexJS(textareaEl.value)
-        })
+        setCode(
+          storedFileContent.content
+            ? storedFileContent.content
+            : (fileObject.file.contents as string)
+        )
         saveFileToLocalStorage(treeNode.uri, fileObject.file.contents as string)
       } else {
         const file = fileObject?.directory[fileName]
         if ("file" in file!) {
-          textareaEl.value = storedFileContent.content
-            ? storedFileContent.content
-            : (file.file.contents as string)
-          textareaEl.addEventListener("input", (_event) => {
-            writeIndexJS(textareaEl.value)
-          })
+          setCode(
+            storedFileContent.content
+              ? storedFileContent.content
+              : (file.file.contents as string)
+          )
           saveFileToLocalStorage(treeNode.uri, file.file.contents as string)
         }
       }
     }
   }
-
   // you can customize item renderer
   const itemRender = (treeNode: TreeNode) => (
     <FileItemWithFileIcon treeNode={treeNode} />
   )
+  useEffect(() => {
+    writeIndexJS(code)
+  }, [code])
 
   return (
     <div className="italic text-center pl-12 w-full h-96 bg-gray-100 shadow-lg rounded-lg">

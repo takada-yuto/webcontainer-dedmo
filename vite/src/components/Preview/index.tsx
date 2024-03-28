@@ -1,7 +1,10 @@
 export const Preview = () => {
   return (
-    <>
-      <h1>Installing dependencies...</h1>
-    </>
+    <div className="flex items-center justify-center h-full">
+      <h1 className="text-4xl font-bold text-gray-900 text-center">
+        Installing dependencies...
+      </h1>
+      <div>ハロー</div>
+    </div>
   )
 }

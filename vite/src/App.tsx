@@ -1,5 +1,5 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
-import "./App.css"
+// import "./App.css"
 // import { Home } from "./components/Home"
 import { RecoilRoot } from "recoil"
 import { Preview } from "./components/Preview"

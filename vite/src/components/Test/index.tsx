@@ -1,4 +1,3 @@
-import "./style.css"
 import {
   DirectoryNode,
   FileNode,
@@ -185,30 +184,44 @@ export const Test = () => {
   }
   return (
     <>
-      <div id="app" className="container">
-        <div className="editor">
-          <div>
-            <form onSubmit={handleFileCreation}>
-              <p>※ リロードでデータ消えます</p>
-              <input
-                type="text"
-                placeholder="ファイルパス"
-                value={filePath}
-                onChange={handleFilePathChange}
-              />
-              <button type="submit">追加</button>
+      <div className="grid grid-cols-1 gap-4">
+        <div className="container grid grid-cols-3 gap-4">
+          <div className="editor h-1/6 grid grid-cols-1 gap-4 ">
+            <form
+              onSubmit={handleFileCreation}
+              className="flex items-center space-y-4"
+            >
+              <div>
+                <p className="text-gray-600">※ リロードでデータが消えます</p>
+                <input
+                  type="text"
+                  placeholder="ファイルパス"
+                  value={filePath}
+                  onChange={handleFilePathChange}
+                  className="w-full max-w-md border-gray-300 focus:ring focus:border-blue-300 rounded-lg shadow-sm px-4 py-2"
+                />
+              </div>
+              <button
+                type="submit"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md focus:outline-none focus:ring focus:border-blue-300"
+              >
+                追加
+              </button>
             </form>
             <ViewTree />
           </div>
-          <textarea></textarea>
+          <textarea className="flex bg-gray-100 text-gray-800 px-4 py-2 rounded-lg shadow-md focus:outline-none focus:ring focus:border-blue-300"></textarea>
+          <div className="preview flex">
+            <iframe
+              src="../Preview"
+              className="w-full h-full border-4 border-blue-500 rounded-lg shadow-md"
+            ></iframe>
+          </div>
         </div>
-        <div className="preview">
-          <iframe src="../Preview"></iframe>
+        <div className="terminalcontainer grid grid-cols-2 gap-4">
+          <div className="terminal1"></div>
+          <div className="terminal2"></div>
         </div>
-      </div>
-      <div id="app" className="terminalcontainer">
-        <div className="terminal1"></div>
-        <div className="terminal2"></div>
       </div>
     </>
   )

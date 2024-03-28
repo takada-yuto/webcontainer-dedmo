@@ -4,7 +4,6 @@ import { FileTree, FileTreeProps, TreeNode, utils } from "@sinm/react-file-tree"
 import FileItemWithFileIcon from "@sinm/react-file-tree/lib/FileItemWithFileIcon"
 import "@sinm/react-file-tree/icons.css"
 import "@sinm/react-file-tree/styles.css"
-import "./styles.css"
 import { loadFileTreeFromLocalStorage, writeIndexJS } from "../Test"
 import { useRecoilState } from "recoil"
 import { fileTreeState } from "../../atoms/tree"
@@ -155,7 +154,7 @@ export const ViewTree = () => {
   )
 
   return (
-    <div className="App">
+    <div className="italic text-center pl-12 w-full h-96 bg-gray-100 shadow-lg rounded-lg">
       <FileTree
         itemRenderer={itemRender}
         tree={fileTree}

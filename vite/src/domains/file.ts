@@ -27,13 +27,22 @@ export class FileSystemManager {
         if (!currentDir[part]) {
           // ディレクトリが存在しない場合は新しく追加
           currentDir[part] = { directory: {} }
+          currentDir = currentDir[part].directory // 新しく作成したディレクトリに移動
         } else if (currentDir[part].directory) {
           // ディレクトリが存在し、既存のディレクトリがある場合はそのディレクトリを参照
           currentDir = currentDir[part].directory
         } else if (currentDir[part].file) {
           // ディレクトリが存在し、既存のファイルがある場合は上書き
-          currentDir[part] = { directory: {} }
-          currentDir = currentDir[part].directory
+          // 既存のファイルをディレクトリに変更してから、新しいディレクトリを作成して移動
+          const fileName = pathParts.slice(i).join("/") // パスの残り部分をファイル名として取得
+          currentDir[part] = {
+            directory: {
+              [fileName]: {
+                file: { contents: currentDir[part].file.contents },
+              },
+            },
+          }
+          currentDir = currentDir[part].directory[fileName].directory // 新しく作成したディレクトリに移動
         }
       }
     }

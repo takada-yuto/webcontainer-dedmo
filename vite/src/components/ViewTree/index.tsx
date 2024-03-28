@@ -7,7 +7,7 @@ import "@sinm/react-file-tree/styles.css"
 import { loadFileTreeFromLocalStorage, writeIndexJS } from "../Test"
 import { useRecoilState } from "recoil"
 import { fileTreeState } from "../../atoms/tree"
-import { DirectoryNode, FileSystemTree } from "@webcontainer/api"
+import { FileSystemTree } from "@webcontainer/api"
 import * as react from "react"
 import { InternalHighlightProps } from "prism-react-renderer"
 import { codeState } from "../../atoms/code"
@@ -89,65 +89,40 @@ export const ViewTree = () => {
     saveFileNameToLocalStorage(treeNode.uri)
     if (textareaEl != null) {
       if (treeNode.type === "directory") return
-      const lastSlashIndex = treeNode.uri.lastIndexOf("/")
 
-      // ファイル名を取得
-      const fileName =
-        lastSlashIndex !== -1
-          ? treeNode.uri.substring(lastSlashIndex + 1)
-          : treeNode.uri
+      const findFileInDirectory = (directory: any, filePath: string): any => {
+        const pathParts = filePath.split("/").filter(Boolean)
 
-      const findMatchingFile = (
-        directory: FileSystemTree,
-        filePath: string
-      ): any => {
-        const pathParts = filePath.split("/").filter((part) => part !== "") // "/"で分割して不要な空の要素を除外する
-
-        let currentDir: FileSystemTree | DirectoryNode = directory
+        let currentDir = directory
 
         for (const part of pathParts) {
-          if (!("directory" in Object.values(currentDir)[0])) {
-            const directoryContents: any = currentDir.directory
-            if (part in directoryContents) {
-              return directoryContents[part]
-            }
-            // ディレクトリではない場合は該当ファイルは存在しないので null を返す
+          if (
+            !currentDir ||
+            (!currentDir[part] && !currentDir.directory[part])
+          ) {
+            // ディレクトリが存在しないか、指定されたパスが存在しない場合は null を返す
             return null
           }
-
-          const directoryContents: any = currentDir
-
-          if (part in directoryContents) {
-            // ディレクトリが存在する場合はそのディレクトリを参照し、次の階層へ移動する
-            currentDir = directoryContents[part]
-          } else {
-            // ディレクトリが見つからない場合は該当ファイルは存在しないので null を返す
-            return null
+          if (currentDir[part]) {
+            currentDir = currentDir[part]
+          } else if (currentDir.directory[part]) {
+            currentDir = currentDir.directory[part]
           }
         }
+
+        return currentDir
       }
 
-      const matchedFile = findMatchingFile(initialFileTree, treeNode.uri)
-
-      const fileObject = matchedFile ? matchedFile : null
-
-      if ("file" in fileObject!) {
+      const fileObj = findFileInDirectory(initialFileTree, treeNode.uri)
+      if ("file" in fileObj) {
         setCode(
           storedFileContent.content
             ? storedFileContent.content
-            : (fileObject.file.contents as string)
+            : (fileObj.file.contents as string)
         )
-        saveFileToLocalStorage(treeNode.uri, fileObject.file.contents as string)
+        saveFileToLocalStorage(treeNode.uri, fileObj.file.contents as string)
       } else {
-        const file = fileObject?.directory[fileName]
-        if ("file" in file!) {
-          setCode(
-            storedFileContent.content
-              ? storedFileContent.content
-              : (file.file.contents as string)
-          )
-          saveFileToLocalStorage(treeNode.uri, file.file.contents as string)
-        }
+        console.log(fileObj)
       }
     }
   }

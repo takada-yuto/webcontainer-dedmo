@@ -24,6 +24,7 @@ const sorter = (treeNodes: TreeNode[]) =>
 export const loadFileNameLocalStorage = () => {
   const storedFileName = localStorage.getItem("fileName")
   const initialFileName = "/src/components/hello.tsx"
+  // const initialFileName = "/src/app/page.tsx"
   return storedFileName
     ? storedFileName.replace(/"/g, "")
     : initialFileName.replace(/"/g, "")
@@ -31,6 +32,7 @@ export const loadFileNameLocalStorage = () => {
 export const loadFileLocalStorage = (fileName: string) => {
   const initialFileObj = {
     name: "/src/components/hello.tsx",
+    // name: "/src/app/page.tsx",
     content: "",
   }
   const storedFile = localStorage.getItem(fileName)
@@ -135,7 +137,7 @@ export const ViewTree = () => {
   }, [code])
 
   return (
-    <div className="italic text-center pl-12 w-full h-96 bg-gray-100 shadow-lg rounded-lg">
+    <div className="italic text-center pl-12 w-full h-[450px] bg-gray-100 shadow-lg rounded-lg">
       <FileTree
         itemRenderer={itemRender}
         tree={fileTree}

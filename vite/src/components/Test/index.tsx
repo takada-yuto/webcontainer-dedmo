@@ -201,6 +201,7 @@ export const Test = () => {
     height: "100%",
     caretColor: "white",
     backgroundColor: "rgb(40, 42, 54)",
+    padding: "1rem",
   }
 
   const rendererHandler = () => {
@@ -252,9 +253,9 @@ export const Test = () => {
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4">
-        <div className="container grid grid-cols-3 gap-4">
-          <div className="editor h-1/6 grid grid-cols-1 gap-4 ">
+      <div className="grid grid-cols-1 gap-4 p-4">
+        <div className="grid grid-cols-3 gap-4 w-full">
+          <div className="grid grid-cols-1 gap-4 ">
             <form
               onSubmit={handleFileCreation}
               className="flex items-center space-y-4"
@@ -286,16 +287,13 @@ export const Test = () => {
               writeIndexJS(e.target.value)
             }}
             value={code}
-            className="flex bg-gray-100 text-gray-800 px-4 py-2 rounded-lg shadow-md focus:outline-none focus:ring focus:border-blue-300"
           >
             {rendererHandler()}
           </RichTextarea>
-          <div className="preview flex">
-            <iframe
-              src="../Preview"
-              className="w-full h-full border-4 border-blue-500 rounded-lg shadow-md"
-            ></iframe>
-          </div>
+          <iframe
+            src="../Preview"
+            className="w-full h-full border-4 border-blue-500 rounded-lg shadow-md"
+          ></iframe>
         </div>
         <div className="terminalcontainer grid grid-cols-2 gap-4">
           <div className="terminal1"></div>

@@ -110,6 +110,7 @@ export const Test = () => {
           const fileNode = directory[fileName]
           isDirectory(fileNode)
         } else if ("file" in node) {
+          new Promise((resolve) => setTimeout(resolve, 5000))
           setCode(node.file.contents as string)
         } else {
           return
@@ -173,7 +174,7 @@ export const Test = () => {
   }, [])
   useEffect(() => {
     writeIndexJS(code)
-  }, [setCode])
+  }, [code])
   const [filePath, setFilePath] = useState("")
   const setFileTree = useSetRecoilState(fileTreeState)
   // ファイルパスの変更ハンドラー

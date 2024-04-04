@@ -77,7 +77,7 @@ export const ViewTree = () => {
   }, [])
 
   const toggleExpanded: FileTreeProps["onItemClick"] = (treeNode) => {
-    const initialFileTree: FileSystemTree = loadFileTreeFromLocalStorage()
+    const fileTree: FileSystemTree = loadFileTreeFromLocalStorage()
     setFileTree(
       (tree) =>
         utils.assignTreeNode(tree, treeNode.uri, {
@@ -115,7 +115,7 @@ export const ViewTree = () => {
         return currentDir
       }
 
-      const fileObj = findFileInDirectory(initialFileTree, treeNode.uri)
+      const fileObj = findFileInDirectory(fileTree, treeNode.uri)
       if ("file" in fileObj) {
         setCode(
           storedFileContent.content

@@ -39,69 +39,61 @@ export const initialTree: TreeNode = {
     },
   ],
 }
-// export const initialTree: TreeNode = {
-//   type: "directory",
-//   uri: "/src",
-//   children: [
-//     {
-//       type: "directory",
-//       uri: "/src/app",
-//       children: [
-//         {
-//           type: "directory",
-//           uri: "/src/app/about",
-//           children: [
-//             {
-//               type: "file",
-//               uri: "/src/app/about/layout.tsx",
-//             },
-//             {
-//               type: "file",
-//               uri: "/src/app/about/page.tsx",
-//             },
-//           ],
-//         },
-//         {
-//           type: "file",
-//           uri: "/src/app/globals.css",
-//         },
-//         {
-//           type: "file",
-//           uri: "/src/app/layout.tsx",
-//         },
-//         {
-//           type: "file",
-//           uri: "/src/app/page.tsx",
-//         },
-//       ],
-//     },
-//     {
-//       type: "file",
-//       uri: "/src/next-env.d.ts",
-//     },
-//     {
-//       type: "file",
-//       uri: "/src/package.json",
-//     },
-//     {
-//       type: "file",
-//       uri: "/src/postcss.config.js",
-//     },
-//     {
-//       type: "file",
-//       uri: "/src/tailwind.config.ts",
-//     },
-//     {
-//       type: "file",
-//       uri: "/src/tsconfig.json",
-//     },
-//   ],
-// }
+export const nextjsInitialTree: TreeNode = {
+  type: "directory",
+  uri: "/src",
+  children: [
+    {
+      type: "directory",
+      uri: "/src/public",
+      children: [
+        {
+          type: "file",
+          uri: "/src/public/index.html",
+        },
+      ],
+    },
+    {
+      type: "directory",
+      uri: "/src/src",
+      children: [
+        {
+          type: "file",
+          uri: "/src/src/globals.css",
+        },
+        {
+          type: "file",
+          uri: "/src/src/App.tsx",
+        },
+        {
+          type: "file",
+          uri: "/src/src/index.tsx",
+        },
+      ],
+    },
+    {
+      type: "file",
+      uri: "/src/package.json",
+    },
+    {
+      type: "file",
+      uri: "/src/postcss.config.js",
+    },
+    {
+      type: "file",
+      uri: "/src/tailwind.config.js",
+    },
+    {
+      type: "file",
+      uri: "/src/tsconfig.json",
+    },
+  ],
+}
 
 // ファイルツリーの状態を管理するアトム
 export const fileTreeState = atom({
   key: "fileTreeState",
-  default: initialTree,
+  default: nextjsInitialTree,
 })
 
 // ファイルを追加する関数

@@ -4,7 +4,7 @@ import { FileTree, FileTreeProps, TreeNode, utils } from "@sinm/react-file-tree"
 import FileItemWithFileIcon from "@sinm/react-file-tree/lib/FileItemWithFileIcon"
 import "@sinm/react-file-tree/icons.css"
 import "@sinm/react-file-tree/styles.css"
-import { loadFileTreeFromLocalStorage, writeIndexJS } from "../Test"
+import { loadFileTreeFromLocalStorage, writeIndexJS } from "../Home"
 import { useRecoilState } from "recoil"
 import { fileTreeState } from "../../atoms/tree"
 import { FileSystemTree } from "@webcontainer/api"
@@ -23,16 +23,14 @@ const sorter = (treeNodes: TreeNode[]) =>
   )
 export const loadFileNameLocalStorage = () => {
   const storedFileName = localStorage.getItem("fileName")
-  const initialFileName = "/src/components/hello.tsx"
-  // const initialFileName = "/src/app/page.tsx"
+  const initialFileName = "/src/src/App.tsx"
   return storedFileName
     ? storedFileName.replace(/"/g, "")
     : initialFileName.replace(/"/g, "")
 }
 export const loadFileLocalStorage = (fileName: string) => {
   const initialFileObj = {
-    name: "/src/components/hello.tsx",
-    // name: "/src/app/page.tsx",
+    name: "/src/src/App.tsx",
     content: "",
   }
   const storedFile = localStorage.getItem(fileName)
@@ -128,7 +126,6 @@ export const ViewTree = () => {
       }
     }
   }
-  // you can customize item renderer
   const itemRender = (treeNode: TreeNode) => (
     <FileItemWithFileIcon treeNode={treeNode} />
   )
@@ -137,7 +134,7 @@ export const ViewTree = () => {
   }, [code])
 
   return (
-    <div className="italic text-center pl-12 w-full h-[450px] bg-gray-100 shadow-lg rounded-lg">
+    <div className="italic text-center pl-12 h-300 min-w-450 bg-gray-100 shadow-lg rounded-lg">
       <FileTree
         itemRenderer={itemRender}
         tree={fileTree}

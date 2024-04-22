@@ -40,6 +40,7 @@ const updateFileTree = (newFileTree: FileSystemTree) => {
   saveFileTreeToLocalStorage(newFileTree)
 }
 
+// ファイル変更内容をコンテナに書き込む
 export const writeIndexJS = async (content: string) => {
   const filePath = loadFileNameLocalStorage()
   saveFileToLocalStorage(filePath, content)
@@ -75,7 +76,7 @@ export const Test = () => {
   }
   useEffect(() => {
     ;(async () => {
-      localStorage.clear()
+      localStorage.clear() // コンテナ起動時に前回までの情報を削除
       const initialFileTree = loadFileTreeFromLocalStorage()
       if (!webcontainerInstance) {
         webcontainerInstance = await WebContainer.boot()

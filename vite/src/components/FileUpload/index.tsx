@@ -159,8 +159,11 @@ export const FileUpload: React.FC<Props> = ({
   return (
     <>
       <div onDragOver={handleDragOver} onDrop={handleDrop}>
+        <p className="text-sm text-gray-400 mt-2">
+          npmで動くプロジェクトだけアップロードできます
+        </p>
         <div
-          className="m-8 w-450 h-48 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center cursor-pointer"
+          className="m-8 w-450 h-200 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
         >
           <input
@@ -178,13 +181,13 @@ export const FileUpload: React.FC<Props> = ({
         {newTree && <ViewTree />}
         {loadFileNameLocalStorage() && (
           <p className="text-sm text-gray-400 mt-2">
-            Current Source File: {loadFileNameLocalStorage()}
+            選択したファイルがソースになります {loadFileNameLocalStorage()}
           </p>
         )}
       </div>
-      <div className="flex mt-auto w-full mt-16">
+      <div className="flex mt-auto w-full mt-20">
         <button
-          className="bg-blue-500 hover:bg-white hover:text-blue-500 mx-10 p-8"
+          className="bg-blue-500 hover:bg-white hover:text-blue-500 ml-10 mr-240 p-8 w-100"
           onClick={() => {
             setIsOpenForm(false)
             onFileSystemTreeChange(FileSystemTree)
@@ -198,7 +201,7 @@ export const FileUpload: React.FC<Props> = ({
           Upload
         </button>
         <button
-          className="bg-blue-500 hover:bg-white hover:text-blue-500 mx-10 p-8"
+          className="bg-blue-500 hover:bg-white hover:text-blue-500 mx-10 p-8 w-100"
           onClick={() => {
             setIsOpenForm(false)
             const passedFileTree = loadPassedFileTreeFromLocalStorage()

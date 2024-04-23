@@ -4,17 +4,11 @@ import {
   FileSystemTree,
   WebContainer,
 } from "@webcontainer/api"
-import { nextjsFiles } from "../../lib/webContainerSideFiles"
 import { Terminal } from "xterm"
 import "xterm/css/xterm.css"
 import { FileSystemManager } from "../../domains/file"
 import { useEffect, useState } from "react"
-import {
-  ViewTree,
-  loadFileLocalStorage,
-  loadFileNameLocalStorage,
-  saveFileToLocalStorage,
-} from "../ViewTree"
+import { ViewTree } from "../ViewTree"
 import { useRecoilState, useSetRecoilState } from "recoil"
 import { fileTreeState } from "../../atoms/tree"
 import { convertToObject } from "../../util/convertTree"
@@ -22,23 +16,16 @@ import { Renderer, RichTextarea } from "rich-textarea"
 import { Highlight, InternalHighlightProps, themes } from "prism-react-renderer"
 import * as react from "react"
 import { codeState } from "../../atoms/code"
+import {
+  loadFileLocalStorage,
+  loadFileNameLocalStorage,
+  loadFileTreeFromLocalStorage,
+  saveFileToLocalStorage,
+  saveFileTree,
+} from "../../util/handleLocalStorage"
+import { FileUpload } from "../FileUpload"
 
 let webcontainerInstance: WebContainer | undefined
-// ローカルストレージからファイルツリーを読み込み
-export const loadFileTreeFromLocalStorage = () => {
-  const storedFileTree = localStorage.getItem("fileTree")
-  return storedFileTree ? JSON.parse(storedFileTree) : nextjsFiles
-}
-
-// ファイルツリーをローカルストレージに保存
-const saveFileTreeToLocalStorage = (fileTree: FileSystemTree) => {
-  localStorage.setItem("fileTree", JSON.stringify(fileTree))
-}
-
-// ファイルツリーを更新する場合、ローカルストレージに保存
-const updateFileTree = (newFileTree: FileSystemTree) => {
-  saveFileTreeToLocalStorage(newFileTree)
-}
 
 // ファイル変更内容をコンテナに書き込む
 export const writeIndexJS = async (content: string) => {
@@ -53,11 +40,27 @@ export const writeIndexJS = async (content: string) => {
 }
 export const Home = () => {
   const [code, setCode] = useRecoilState(codeState)
-  const startDevServer = async (terminal: Terminal) => {
-    console.log("npm run start")
+  const startDevServer = async (
+    terminal: Terminal,
+    initialFileTree: FileSystemTree
+  ) => {
+    const rootDirectory = Object.keys(initialFileTree)[0]
+    const rootDirectoryObj = initialFileTree[rootDirectory] as DirectoryNode
+    const packageJsonObj = rootDirectoryObj.directory[
+      "package.json"
+    ] as FileNode
+    const packageJsonContent = packageJsonObj.file.contents as string
+    const packageJsonScripts = JSON.parse(packageJsonContent).scripts
+    let startCommand = ""
+    if (packageJsonScripts.start) {
+      startCommand = "start"
+    } else {
+      startCommand = "dev"
+    }
+    console.log(`npm run ${startCommand}`)
     const serverProcess = await webcontainerInstance!.spawn("sh", [
       "-c",
-      "cd src/ && npm run start",
+      `cd ${rootDirectory} && npm run ${startCommand}`,
     ])
 
     const iframeEl = document.querySelector("iframe")
@@ -69,90 +72,77 @@ export const Home = () => {
       })
     )
     webcontainerInstance!.on("server-ready", (_port, url) => {
-      if (iframeEl != null) {
-        iframeEl.src = url
-      }
+      iframeEl!.src = url
     })
+    console.log(iframeEl)
+  }
+  const setupContainer = async () => {
+    const initialFileTree = loadFileTreeFromLocalStorage()
+    if (!webcontainerInstance) {
+      webcontainerInstance = await WebContainer.boot()
+    } else {
+      webcontainerInstance.teardown()
+      const iframeEl = document.querySelector("iframe")
+      iframeEl!.src = "../Preview"
+      webcontainerInstance = await WebContainer.boot()
+    }
+    const fileSystemManager = new FileSystemManager(initialFileTree)
+    await webcontainerInstance.mount(fileSystemManager.files)
+    const rootDirectory = Object.keys(initialFileTree)[0]
+    const installProcess = await webcontainerInstance.spawn("sh", [
+      "-c",
+      `cd ${rootDirectory} && npm i`,
+    ])
+    installProcess.output.pipeTo(
+      new WritableStream({
+        write(data) {
+          console.log(data)
+        },
+      })
+    )
+
+    if ((await installProcess.exit) !== 0) {
+      throw new Error("Installation failed")
+    }
+
+    const textareaEl = document.querySelector(
+      "#myTextarea"
+    ) as unknown as react.FunctionComponentElement<InternalHighlightProps>
+    const terminalEl1 = document.querySelector(".terminal1") as HTMLElement
+    const isDirectory = (node: DirectoryNode | FileNode) => {
+      if (!node) return
+      if ("directory" in node) {
+        const directory = node.directory as FileSystemTree
+        const rawFileName = loadFileNameLocalStorage()
+        const lastSlashIndex = rawFileName.lastIndexOf("/")
+        // ファイル名を取得
+        const fileName =
+          lastSlashIndex !== -1
+            ? rawFileName.substring(lastSlashIndex + 1)
+            : rawFileName
+        const fileNode = directory[fileName]
+        isDirectory(fileNode)
+      } else if ("file" in node) {
+        new Promise((resolve) => setTimeout(resolve, 5000))
+        setCode(node.file.contents as string)
+      } else {
+        return
+      }
+    }
+    if (textareaEl != null) {
+      for (const [_, value] of Object.entries(fileSystemManager.files)) {
+        isDirectory(value)
+      }
+    }
+    const terminal1 = new Terminal({
+      convertEol: true,
+    })
+    terminal1.open(terminalEl1)
+    startDevServer(terminal1, initialFileTree)
   }
   useEffect(() => {
-    ;(async () => {
-      localStorage.clear() // コンテナ起動時に前回までの情報を削除
-      const initialFileTree = loadFileTreeFromLocalStorage()
-      if (!webcontainerInstance) {
-        webcontainerInstance = await WebContainer.boot()
-      }
-      const fileSystemManager = new FileSystemManager(initialFileTree)
-      await webcontainerInstance.mount(fileSystemManager.files)
-      const installProcess = await webcontainerInstance.spawn("sh", [
-        "-c",
-        "cd src/ && npm i",
-      ])
-      installProcess.output.pipeTo(
-        new WritableStream({
-          write(data) {
-            console.log(data)
-          },
-        })
-      )
-
-      if ((await installProcess.exit) !== 0) {
-        throw new Error("Installation failed")
-      }
-
-      const textareaEl = document.querySelector(
-        "#myTextarea"
-      ) as unknown as react.FunctionComponentElement<InternalHighlightProps>
-      const terminalEl1 = document.querySelector(".terminal1") as HTMLElement
-      const isDirectory = (node: DirectoryNode | FileNode) => {
-        if (!node) return
-        if ("directory" in node) {
-          const directory = node.directory as FileSystemTree
-          const rawFileName = loadFileNameLocalStorage()
-          const lastSlashIndex = rawFileName.lastIndexOf("/")
-          // ファイル名を取得
-          const fileName =
-            lastSlashIndex !== -1
-              ? rawFileName.substring(lastSlashIndex + 1)
-              : rawFileName
-          const fileNode = directory[fileName]
-          isDirectory(fileNode)
-        } else if ("file" in node) {
-          new Promise((resolve) => setTimeout(resolve, 5000))
-          setCode(node.file.contents as string)
-        } else {
-          return
-        }
-      }
-      if (textareaEl != null) {
-        for (const [_, value] of Object.entries(fileSystemManager.files)) {
-          isDirectory(value)
-        }
-      }
-      const installDependencies = async (terminal: Terminal) => {
-        const installProcess = await webcontainerInstance!.spawn("sh", [
-          "-c",
-          "cd src/ && npm i",
-        ])
-
-        installProcess.output.pipeTo(
-          new WritableStream({
-            write(data) {
-              terminal.write(data)
-            },
-          })
-        )
-        return installProcess.exit
-      }
-      const terminal1 = new Terminal({
-        convertEol: true,
-      })
-      terminal1.open(terminalEl1)
-      const exitCode = await installDependencies(terminal1)
-      if (exitCode !== 0) {
-        throw new Error("Installation failed")
-      }
-      startDevServer(terminal1)
-    })()
+    localStorage.clear() // コンテナ起動時に前回までの情報を削除
+    setupContainer()
   }, [])
   useEffect(() => {
     writeIndexJS(code)
@@ -173,10 +163,13 @@ export const Home = () => {
     const fileSystemManager = new FileSystemManager(initialFileTree)
     fileSystemManager.addFile(filePath, "")
     const convertedTree = convertToObject(fileSystemManager.files)
-    updateFileTree(fileSystemManager.files as FileSystemTree)
+    saveFileTree(fileSystemManager.files as FileSystemTree)
     setFileTree(convertedTree.children![0])
     await webcontainerInstance!.mount(fileSystemManager.files)
     setFilePath("")
+  }
+  const handleFileSystemTreeChange = async (value: FileSystemTree) => {
+    await webcontainerInstance!.mount(value) // 値を親コンポーネントの状態に設定する
   }
 
   const style: React.CSSProperties = {
@@ -234,6 +227,7 @@ export const Home = () => {
     return renderer
   }
   const [isOpenTree, setIsOpenTree] = useState(false)
+  const [isOpenForm, setIsOpenForm] = useState(false)
 
   return (
     <>
@@ -251,6 +245,15 @@ export const Home = () => {
                 >
                   Open Directory Tree
                 </button>
+                <button
+                  className="bg-slate-900 hover:bg-slate-700 border-2 border-blue-500 text-white text-lg w-200 h-60 py-2 px-4 m-4"
+                  style={{
+                    borderRadius: "30px",
+                  }}
+                  onClick={() => setIsOpenForm(true)}
+                >
+                  Open Create Project Form
+                </button>
                 <div className="flex flex-col text-white justify-between">
                   <p>※ リロードでデータが消えます</p>
                   <h1>{loadFileNameLocalStorage()}</h1>
@@ -259,7 +262,7 @@ export const Home = () => {
               {isOpenTree && (
                 <div className="fixed inset-0 flex items-center justify-center z-20">
                   <div
-                    className="border-4 border-blue-500 rounded-lg bg-slate-900 md:w-500 p-16 flex flex-col items-start"
+                    className="border-2 border-blue-500 rounded-lg bg-slate-900 md:w-500 p-16 flex flex-col items-start"
                     style={{
                       borderRadius: "30px",
                     }}
@@ -289,12 +292,28 @@ export const Home = () => {
                     </div>
                     <div className="flex mt-auto w-full">
                       <button
-                        className="bg-blue-500 hover:bg-white hover:text-black px-100 mt-16 mx-120"
+                        className="bg-blue-500 hover:bg-white hover:text-blue-500 px-100 mt-16 mx-120"
                         onClick={() => setIsOpenTree(false)}
                       >
                         Close
                       </button>
                     </div>
+                  </div>
+                </div>
+              )}
+              {isOpenForm && (
+                <div className="fixed inset-0 flex items-center justify-center z-20">
+                  <div
+                    className="border-2 border-blue-500 rounded-lg bg-slate-900 md:w-500 p-16 flex flex-col items-start"
+                    style={{
+                      borderRadius: "30px",
+                    }}
+                  >
+                    <FileUpload
+                      onFileSystemTreeChange={handleFileSystemTreeChange}
+                      setIsOpenForm={setIsOpenForm}
+                      setupContainer={setupContainer}
+                    />
                   </div>
                 </div>
               )}

@@ -4,13 +4,19 @@ import { FileTree, FileTreeProps, TreeNode, utils } from "@sinm/react-file-tree"
 import FileItemWithFileIcon from "@sinm/react-file-tree/lib/FileItemWithFileIcon"
 import "@sinm/react-file-tree/icons.css"
 import "@sinm/react-file-tree/styles.css"
-import { loadFileTreeFromLocalStorage, writeIndexJS } from "../Home"
+import { writeIndexJS } from "../Home"
 import { useRecoilState } from "recoil"
 import { fileTreeState } from "../../atoms/tree"
 import { FileSystemTree } from "@webcontainer/api"
 import * as react from "react"
 import { InternalHighlightProps } from "prism-react-renderer"
 import { codeState } from "../../atoms/code"
+import {
+  loadFileLocalStorage,
+  loadFileTreeFromLocalStorage,
+  saveFileNameToLocalStorage,
+  saveFileToLocalStorage,
+} from "../../util/handleLocalStorage"
 
 const sorter = (treeNodes: TreeNode[]) =>
   _.orderBy(
@@ -21,41 +27,7 @@ const sorter = (treeNodes: TreeNode[]) =>
     ],
     ["asc", "asc"]
   )
-export const loadFileNameLocalStorage = () => {
-  const storedFileName = localStorage.getItem("fileName")
-  const initialFileName = "/src/src/App.tsx"
-  return storedFileName
-    ? storedFileName.replace(/"/g, "")
-    : initialFileName.replace(/"/g, "")
-}
-export const loadFileLocalStorage = (fileName: string) => {
-  const initialFileObj = {
-    name: "/src/src/App.tsx",
-    content: "",
-  }
-  const storedFile = localStorage.getItem(fileName)
-  if (storedFile) {
-    const fileName = JSON.parse(storedFile).name.replace(/"/g, "")
-    const fileContent = JSON.parse(storedFile).content
-    const storedFileObj = {
-      name: fileName,
-      content: fileContent,
-    }
-    return storedFileObj
-  } else {
-    return initialFileObj
-  }
-}
 
-// ファイルの名前をローカルストレージに保存
-export const saveFileNameToLocalStorage = (fileName: string) => {
-  localStorage.setItem("fileName", JSON.stringify(fileName))
-}
-// ファイルの名前と内容をローカルストレージに保存
-export const saveFileToLocalStorage = (fileName: string, content: string) => {
-  const file = { name: fileName, content: content }
-  localStorage.setItem(fileName, JSON.stringify(file))
-}
 export const ViewTree = () => {
   const [fileTree, setFileTree] = useRecoilState(fileTreeState)
   const [code, setCode] = useRecoilState(codeState)

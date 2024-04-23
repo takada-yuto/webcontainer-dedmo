@@ -1,8 +1,8 @@
 import { atom } from "recoil"
-import { initialCode } from "../lib/webContainerSideFiles"
+import { initialFile } from "../lib/projectData"
 
-// エディターのコードの状態を管理するアトム
+// エディターのコードの中身を管理するアトム
 export const codeState = atom({
   key: "codeState",
-  default: initialCode,
+  default: initialFile.content,
 })

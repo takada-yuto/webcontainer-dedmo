@@ -1,94 +1,9 @@
 import { atom } from "recoil"
 import { TreeNode } from "@sinm/react-file-tree"
+import { convertToObject } from "../util/convertTree"
+import { nextjsFiles } from "../lib/webContainerSideFiles"
 
-export const initialTree: TreeNode = {
-  type: "directory",
-  uri: "/src",
-  children: [
-    {
-      type: "directory",
-      uri: "/src/components",
-      children: [
-        {
-          type: "file",
-          uri: "/src/components/hello.tsx",
-        },
-      ],
-    },
-    {
-      type: "directory",
-      uri: "/src/pages",
-      children: [
-        {
-          type: "file",
-          uri: "/src/pages/index.tsx",
-        },
-      ],
-    },
-    {
-      type: "file",
-      uri: "/src/package.json",
-    },
-    {
-      type: "file",
-      uri: "/src/tsconfig.json",
-    },
-    {
-      type: "file",
-      uri: "/src/next-env.d.ts",
-    },
-  ],
-}
-export const nextjsInitialTree: TreeNode = {
-  type: "directory",
-  uri: "/src",
-  children: [
-    {
-      type: "directory",
-      uri: "/src/public",
-      children: [
-        {
-          type: "file",
-          uri: "/src/public/index.html",
-        },
-      ],
-    },
-    {
-      type: "directory",
-      uri: "/src/src",
-      children: [
-        {
-          type: "file",
-          uri: "/src/src/globals.css",
-        },
-        {
-          type: "file",
-          uri: "/src/src/App.tsx",
-        },
-        {
-          type: "file",
-          uri: "/src/src/index.tsx",
-        },
-      ],
-    },
-    {
-      type: "file",
-      uri: "/src/package.json",
-    },
-    {
-      type: "file",
-      uri: "/src/postcss.config.js",
-    },
-    {
-      type: "file",
-      uri: "/src/tailwind.config.js",
-    },
-    {
-      type: "file",
-      uri: "/src/tsconfig.json",
-    },
-  ],
-}
+const nextjsInitialTree: TreeNode = convertToObject(nextjsFiles).children![0]
 
 // ファイルツリーの状態を管理するアトム
 export const fileTreeState = atom({

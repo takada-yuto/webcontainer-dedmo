@@ -9,6 +9,9 @@ export const Preview = () => {
       <h1 className="text-50 font-bold text-white text-center">
         Installing dependencies...
       </h1>
+      <h1 className="text-25 font-bold text-white text-center">
+        The dependency logs are showing up in the debugging tool
+      </h1>
     </div>
   )
 }

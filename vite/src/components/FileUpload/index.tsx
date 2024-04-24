@@ -1,7 +1,7 @@
 import { TreeNode } from "@sinm/react-file-tree"
-import { DirectoryNode, FileSystemTree } from "@webcontainer/api"
+import { DirectoryNode, FileSystemTree, WebContainer } from "@webcontainer/api"
 import React, { useRef, useState } from "react"
-import { useSetRecoilState } from "recoil"
+import { SetterOrUpdater, useSetRecoilState } from "recoil"
 import { convertToObject } from "../../util/convertTree"
 import { ViewTree } from "../ViewTree"
 import { fileTreeState } from "../../atoms/tree"
@@ -16,8 +16,8 @@ import {
   savePassedFileNameToLocalStorage,
   savePassedFileTree,
 } from "../../util/handleLocalStorage"
-import { writeIndexJS } from "../Home"
-import { codeState } from "../../atoms/code"
+import { writeCode2Container } from "../../util/writeCode2Container"
+import { setupContainer } from "../../util/setupContainer"
 
 interface FileItem {
   path: string
@@ -27,20 +27,21 @@ interface FileItem {
 interface Props {
   onFileSystemTreeChange: (tree: any) => void // 適切な型に置き換える
   setIsOpenForm: React.Dispatch<React.SetStateAction<boolean>>
-  setupContainer: () => Promise<void> // 適切な型に置き換える
+  webcontainerInstance: WebContainer | undefined
+  setCode: SetterOrUpdater<string>
 }
 
 export const FileUpload: React.FC<Props> = ({
   onFileSystemTreeChange,
   setIsOpenForm,
-  setupContainer,
+  webcontainerInstance,
+  setCode,
 }) => {
   const setFileTree = useSetRecoilState(fileTreeState)
   let treeTest: TreeNode = "" as unknown as TreeNode
   let systemTreeTest: FileSystemTree = "" as unknown as FileSystemTree
   const [newTree, setNewFileTree] = useState(treeTest)
   const [FileSystemTree, setFileSystemTree] = useState(systemTreeTest)
-  const setCode = useSetRecoilState(codeState)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -178,7 +179,7 @@ export const FileUpload: React.FC<Props> = ({
             </p>
           </div>
         </div>
-        {newTree && <ViewTree />}
+        {newTree && <ViewTree webcontainerInstance={webcontainerInstance} />}
         {loadFileNameLocalStorage() && (
           <p className="text-sm text-gray-400 mt-2">
             選択したファイルがソースになります {loadFileNameLocalStorage()}
@@ -187,33 +188,27 @@ export const FileUpload: React.FC<Props> = ({
       </div>
       <div className="flex mt-auto w-full mt-20">
         <button
-          className="bg-blue-500 hover:bg-white hover:text-blue-500 ml-10 mr-240 p-8 w-100"
+          className="rounded-10 bg-blue-500 hover:bg-white hover:text-blue-500 ml-10 mr-240 p-8 w-100"
           onClick={() => {
             setIsOpenForm(false)
             onFileSystemTreeChange(FileSystemTree)
             saveFileTree(FileSystemTree)
-            setupContainer()
-          }}
-          style={{
-            borderRadius: "10px",
+            setupContainer(webcontainerInstance, setCode)
           }}
         >
           Upload
         </button>
         <button
-          className="bg-blue-500 hover:bg-white hover:text-blue-500 mx-10 p-8 w-100"
+          className="rounded-10 bg-blue-500 hover:bg-white hover:text-blue-500 mx-10 p-8 w-100"
           onClick={() => {
             setIsOpenForm(false)
             const passedFileTree = loadPassedFileTreeFromLocalStorage()
             const passedFileName = loadPassedFileNameLocalStorage()
             const passedContent = loadFileLocalStorage(passedFileName).content
-            writeIndexJS(passedContent)
+            writeCode2Container(passedContent, webcontainerInstance)
             setCode(passedContent)
             saveFileTree(passedFileTree)
             saveFileNameToLocalStorage(passedFileName)
-          }}
-          style={{
-            borderRadius: "10px",
           }}
         >
           Cansel

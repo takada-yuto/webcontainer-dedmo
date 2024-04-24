@@ -4,10 +4,9 @@ import { FileTree, FileTreeProps, TreeNode, utils } from "@sinm/react-file-tree"
 import FileItemWithFileIcon from "@sinm/react-file-tree/lib/FileItemWithFileIcon"
 import "@sinm/react-file-tree/icons.css"
 import "@sinm/react-file-tree/styles.css"
-import { writeIndexJS } from "../Home"
 import { useRecoilState } from "recoil"
 import { fileTreeState } from "../../atoms/tree"
-import { FileSystemTree } from "@webcontainer/api"
+import { FileSystemTree, WebContainer } from "@webcontainer/api"
 import * as react from "react"
 import { InternalHighlightProps } from "prism-react-renderer"
 import { codeState } from "../../atoms/code"
@@ -17,6 +16,11 @@ import {
   saveFileNameToLocalStorage,
   saveFileToLocalStorage,
 } from "../../util/handleLocalStorage"
+import { writeCode2Container } from "../../util/writeCode2Container"
+
+interface Props {
+  webcontainerInstance: WebContainer | undefined
+}
 
 const sorter = (treeNodes: TreeNode[]) =>
   _.orderBy(
@@ -28,7 +32,7 @@ const sorter = (treeNodes: TreeNode[]) =>
     ["asc", "asc"]
   )
 
-export const ViewTree = () => {
+export const ViewTree: React.FC<Props> = ({ webcontainerInstance }) => {
   const [fileTree, setFileTree] = useRecoilState(fileTreeState)
   const [code, setCode] = useRecoilState(codeState)
   const loadTree = () => {
@@ -55,7 +59,7 @@ export const ViewTree = () => {
         }) as TreeNode
     )
     const textareaEl = document.querySelector(
-      "#myTextarea"
+      "#codeEditor"
     ) as unknown as react.FunctionComponentElement<InternalHighlightProps>
     const storedFileContent = loadFileLocalStorage(treeNode.uri)
     saveFileNameToLocalStorage(treeNode.uri)
@@ -102,7 +106,7 @@ export const ViewTree = () => {
     <FileItemWithFileIcon treeNode={treeNode} />
   )
   useEffect(() => {
-    writeIndexJS(code)
+    writeCode2Container(code, webcontainerInstance)
   }, [code])
 
   return (
